@@ -1,39 +1,52 @@
 <template>
   <div class="map">
-    <Cell :value="item" :coord="{x: 0, y: index}" v-for="(item, index) in cells[0]"></Cell>
-    <Cell :value="item" :coord="{x: 1, y: index}" v-for="(item, index) in cells[1]"></Cell>
-    <Cell :value="item" :coord="{x: 2, y: index}" v-for="(item, index) in cells[2]"></Cell>
-    <Cell :value="item" :coord="{x: 3, y: index}" v-for="(item, index) in cells[3]"></Cell>
+    <cell :tile="tile" v-for="tile in tiles[0]"></cell>
+    <cell :tile="tile" v-for="tile in tiles[1]"></cell>
+    <cell :tile="tile" v-for="tile in tiles[2]"></cell>
+    <cell :tile="tile" v-for="tile in tiles[3]"></cell>
+    <div class="gameover" v-show="isOver">
+      <div class="again">
+        <p class="show-over">GAME OVER</p>
+        <button v-on:click="init()" class="try-again">Try Again</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
   import Cell from './Cell.vue'
+  import Tile from '../Tile.js'
   export default{
     data () {
       return {
-        testdata: Array.from(new Array(8), (v, i) => i),
-        testunit: 15,
-        cells: [
-          [0, 0, 0, 0],
-          [0, 0, 0, 0],
-          [0, 0, 0, 0],
-          [0, 0, 0, 0]
-        ]
+        tiles: [],
+        isOver: false
       }
     },
     created () {
-      this.generateRandom()
+      this.init()
     },
     mounted () {
       document.onkeydown = this.onKeyDown
     },
     methods: {
+      init () {
+        this.isOver = false
+        this.tiles = []
+        for (let i = 0; i < 4; i++) {
+          this.tiles.push([])
+          for (let j = 0; j < 4; j++) {
+            this.tiles[i].push(new Tile(0, {x: i, y: j}))
+            this.$set(this.tiles, i, this.tiles[i])
+          }
+        }
+        this.generateRandom()
+      },
       generateRandom () {
         let space = []
         for (let r = 0; r < 4; r++) {
           for (let c = 0; c < 4; c++) {
-            if (this.cells[r][c] === 0) {
+            if (this.tiles[r][c].value === 0) {
               space.push({r: r, c: c})
             }
           }
@@ -44,14 +57,22 @@
           let r = space[randomIndex].r
           let c = space[randomIndex].c
           /* 二维数组的更新方式只能是更新整个一维数组 */
-          this.cells[r][c] = randomValue
-          this.$set(this.cells, r, this.cells[r])
+          this.tiles[r][c].value = randomValue
+          this.tiles[r][c].isNew = true
+          this.$set(this.tiles, r, this.tiles[r])
         }
       },
       onKeyDown (event) {
         /** keyCode 37 == Left  38 == Up 39 == Right 40 == Down */
         if (event.keyCode >= 37 && event.keyCode <= 40) {
           this.move(event.keyCode - 37)
+        }
+      },
+      refreshTiles () {
+        for (let r = 0; r < 4; r++) {
+          for (let c = 0; c < 4; c++) {
+            this.tiles[r][c].refreshCoord({x: r, y: c})
+          }
         }
       },
       /**
@@ -91,17 +112,22 @@
           this.moveLeft()
         } else {
           for (let i = 0; i < direction; i++) {
-            this.cells = this.rotateLeft(this.cells)
+            this.tiles = this.rotateLeft(this.tiles)
           }
           this.moveLeft()
           for (let i = 0; i < 4 - direction; i++) {
-            this.cells = this.rotateLeft(this.cells)
+            this.tiles = this.rotateLeft(this.tiles)
           }
         }
+        this.refreshTiles()
         for (let i = 0; i < 4; i++) {
-          this.$set(this.cells, i, this.cells[i])
+          this.$set(this.tiles, i, this.tiles[i])
         }
+        // TODO 这里的逻辑有问题,应该是有移动格子时候才需要生成新格子
         this.generateRandom()
+        if (this.isDefeat()) {
+          this.isOver = true
+        }
       },
       /**
        * 向左移动游戏规则:
@@ -113,20 +139,52 @@
        * */
       moveLeft () {
         for (let r = 0; r < 4; r++) {
-          let row = this.cells[r].filter(value => (value !== 0))
+          let row = this.tiles[r].filter(tile => (tile.value !== 0))
           let newRow = []
           while (row.length > 0) {
             let cell = row.shift()
-            if (cell === row[0]) {
-              cell += row.shift()
+            if (row.length > 0 && cell.value === row[0].value) {
+              cell.value += row.shift().value || 0
             }
             newRow.push(cell)
           }
           if (newRow.length < 4) {
-            newRow = newRow.concat(new Array(4 - newRow.length).fill(0))
+            for (let currentY = newRow.length; currentY < 4; currentY++) {
+              newRow.push(new Tile())
+            }
           }
-          this.cells[r] = newRow
+          this.tiles[r] = newRow
         }
+      },
+      /**
+       * 判断是否失败的规则,
+       * 假如还有空白格子,
+       * 或者xx格子的数值和周围上 下 左 右的格子值相等,
+       * 则还没有输
+       */
+      isDefeat () {
+        let defeat = false
+        // 上 下 左 右
+        let x = [-1, 1, 0, 0]
+        let y = [0, 0, -1, 1]
+        for (let r = 0; r < 4; r++) {
+          // 用 |= 的好处: 这里只需要满足以上任意规则则游戏没有输, 因此当任意规则为true, 则defeat一直为true
+          defeat |= (this.tiles[r].filter(tile => tile.value !== 0).length !== 4)
+          if (defeat) { // 如果当前行去掉空格子后不为4个格子,则说明有空格
+            break
+          }
+          for (let c = 0; c < 4; c++) {
+            for (let direct = 0; direct < 4; direct++) {
+              let aroundX = r + x[direct]
+              let aroundY = c + y[direct]
+              // 判断当前this.tiles[r+x[direct]][c+[direct]]的格子存在
+              if (aroundX >= 0 && aroundY >= 0 && aroundX < 4 && aroundY < 4) {
+                defeat |= (this.tiles[r][c].value === this.tiles[aroundX][aroundY].value)
+              }
+            }
+          }
+        }
+        return !defeat
       }
     },
 
@@ -146,10 +204,7 @@
     */
     position: absolute;
     margin: auto;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
 
     /*弹性盒子的方式居中*/
     /*display: flex;*/
@@ -160,5 +215,34 @@
     background-color: #baa;
     border-radius: 20px;
   }
-
+  .gameover {
+    position: relative;
+    width: 450px;
+    height: 450px;
+    background-color: rgba(0, 191, 255, 0.4);
+    border-radius: 20px;
+  }
+  .again {
+    position: absolute;
+    margin: auto;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: auto;
+    height: 200px;
+    display: inline-block;
+    text-align: center;
+  }
+  .show-over {
+    font-size: 36px;
+    color: coral;
+    font-weight: bold;
+  }
+  .try-again {
+    font-size: 20px;
+    border-radius: 5px;
+    background-color: #876;
+    color: white;
+    border: 0;
+    width: 200px;
+    height: 50px;
+  }
 </style>

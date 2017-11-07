@@ -1,6 +1,6 @@
 <template>
-  <div class="cell" v-bind:style="position">
-    <span v-if="value != 0">{{ value }}</span>
+  <div class="cell" v-bind:class="{'new-tile': tile.isNew}" v-bind:style="position">
+    <span v-if="tile.value != 0">{{ tile.value }}</span>
   </div>
 </template>
 
@@ -8,15 +8,10 @@
   export default{
     data () {
       return {
-        oleCoord: {x: 0, y: 0}// 记录旧的坐标为了做过渡动画
       }
     },
     props: {
-      value: {
-        type: Number,
-        required: true
-      },
-      coord: {
+      tile: {
         type: Object,
         required: true
       }
@@ -42,21 +37,20 @@
     computed: {
       position: function () {
         return {
-          top: this.coord.x * 100 + (this.coord.x + 1) * 10 + 'px',
-          left: this.coord.y * 100 + (this.coord.y + 1) * 10 + 'px',
-          background: this.getBackgroudColor(this.value)
-//          transform: `translate(${this.coord.x - this.oldCoord.x}px, ${this.coord.y - this.oldCoord.y}px)`
+          top: this.tile.coord.x * 100 + (this.tile.coord.x + 1) * 10 + 'px',
+          left: this.tile.coord.y * 100 + (this.tile.coord.y + 1) * 10 + 'px',
+          background: this.getBackgroudColor(this.tile.value)
         }
       }
     },
     watch: {
-      coord: function (val, oldVal) {
+//      coord: function (val, oldVal) {
 //        console.log(`newVal is ${val.y}, oldVal is ${oldVal.y}`)
 //        this.oldCoord.x = oldVal.x
 //        this.oldCoord.y = oldVal.y
-        console.log(`new.x:${val.x} new.y:${val.y}`)
-        console.log(`old.x:${oldVal.x} old.y:${oldVal.y}`)
-      }
+//        console.log(`new.x:${val.x} new.y:${val.y}`)
+//        console.log(`old.x:${oldVal.x} old.y:${oldVal.y}`)
+//      }
     }
   }
 </script>
@@ -64,6 +58,7 @@
 
 <style scoped>
   .cell {
+    transition: 100ms ease-in;
     font-size: 30px;
     position: absolute;
     text-align: center;
@@ -72,7 +67,16 @@
     width: 100px;
     height: 100px;
     border-radius: 10px;
-    color: #49390d
+    color: #49390d;
     /*margin: 5px;*/
+  }
+  .new-tile {
+    animation-duration: 200ms;
+    animation-name: emerge;
+    animation-delay: 100ms;
+  }
+  @keyframes emerge {
+    from{transform: scale(0.4)}
+    to{transform: scale(1)}
   }
 </style>
