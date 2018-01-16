@@ -42,15 +42,6 @@
           background: this.getBackgroudColor(this.tile.value)
         }
       }
-    },
-    watch: {
-//      coord: function (val, oldVal) {
-//        console.log(`newVal is ${val.y}, oldVal is ${oldVal.y}`)
-//        this.oldCoord.x = oldVal.x
-//        this.oldCoord.y = oldVal.y
-//        console.log(`new.x:${val.x} new.y:${val.y}`)
-//        console.log(`old.x:${oldVal.x} old.y:${oldVal.y}`)
-//      }
     }
   }
 </script>
@@ -59,11 +50,12 @@
 <style scoped>
   .cell {
     transition: 100ms ease-in;
-    font-size: 30px;
+    font-size: 45px;
     position: absolute;
     text-align: center;
     display: inline-block;
     line-height: 100px;
+    margin: 5px;
     width: 100px;
     height: 100px;
     border-radius: 10px;

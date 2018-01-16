@@ -1,15 +1,22 @@
 <template>
-  <div class="map">
-    <cell :tile="tile" v-for="tile in tiles[0]"></cell>
-    <cell :tile="tile" v-for="tile in tiles[1]"></cell>
-    <cell :tile="tile" v-for="tile in tiles[2]"></cell>
-    <cell :tile="tile" v-for="tile in tiles[3]"></cell>
-    <div class="gameover" v-show="isOver">
-      <div class="again">
-        <p class="show-over">GAME OVER</p>
-        <button v-on:click="init()" class="try-again">Try Again</button>
+
+  <div class="game">
+    <div class="map">
+      <cell :tile="tile" v-for="tile in tiles[0]"></cell>
+      <cell :tile="tile" v-for="tile in tiles[1]"></cell>
+      <cell :tile="tile" v-for="tile in tiles[2]"></cell>
+      <cell :tile="tile" v-for="tile in tiles[3]"></cell>
+      <div class="gameover" v-show="isOver">
+        <div class="again">
+          <p class="show-over">GAME OVER</p>
+          <button v-on:click="init()" class="try-again">Try Again</button>
+        </div>
       </div>
     </div>
+    <div class="score">
+      max: {{ score }}
+    </div>
+
   </div>
 </template>
 
@@ -20,7 +27,8 @@
     data () {
       return {
         tiles: [],
-        isOver: false
+        isOver: false,
+        score: 0
       }
     },
     created () {
@@ -60,6 +68,9 @@
           this.tiles[r][c].value = randomValue
           this.tiles[r][c].isNew = true
           this.$set(this.tiles, r, this.tiles[r])
+          if (!this.score) {
+            this.score = randomValue
+          }
         }
       },
       onKeyDown (event) {
@@ -71,6 +82,7 @@
       refreshTiles () {
         for (let r = 0; r < 4; r++) {
           for (let c = 0; c < 4; c++) {
+            this.score = Math.max(this.score, this.tiles[r][c].value)
             this.tiles[r][c].refreshCoord({x: r, y: c})
           }
         }
@@ -195,7 +207,10 @@
 </script>
 
 <style scoped>
-  .map {
+  .game {
+    width: 460px;
+    height: 560px;
+
     /**  div居中,
     * 当设置width一定,margin 为 auto,
     * 减去 top left right botton的值后,
@@ -210,15 +225,29 @@
     /*display: flex;*/
     /*justify-content: center;*/
 
+  }
+
+  .score {
     width: 450px;
-    height: 450px;
+    height: 100px;
+
+    text-align: center;
+    font-size: 6em;
+  }
+
+  .map {
+    width: 460px;
+    height: 460px;
     background-color: #baa;
     border-radius: 20px;
+
+    /*border-bottom: 5px;*/
+    /*border-top: 5px;*/
   }
   .gameover {
     position: relative;
-    width: 450px;
-    height: 450px;
+    width: 460px;
+    height: 460px;
     background-color: rgba(0, 191, 255, 0.4);
     border-radius: 20px;
   }
