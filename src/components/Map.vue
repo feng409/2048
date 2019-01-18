@@ -28,7 +28,8 @@
       return {
         tiles: [],
         isOver: false,
-        score: 0
+        score: 0,
+        isMove: false
       }
     },
     created () {
@@ -135,8 +136,10 @@
         for (let i = 0; i < 4; i++) {
           this.$set(this.tiles, i, this.tiles[i])
         }
-        // TODO 这里的逻辑有问题,应该是有移动格子时候才需要生成新格子
-        this.generateRandom()
+        // 如果有移动才生成新格子
+        if (this.isMove) {
+          this.generateRandom()
+        }
         if (this.isDefeat()) {
           this.isOver = true
         }
@@ -150,6 +153,7 @@
        * 填充补足4个单元格,
        * */
       moveLeft () {
+        this.isMove = false
         for (let r = 0; r < 4; r++) {
           let row = this.tiles[r].filter(tile => (tile.value !== 0))
           let newRow = []
@@ -165,8 +169,23 @@
               newRow.push(new Tile())
             }
           }
+          this.isMove = this.isMove ? this.isMove : !this.equals(this.tiles[r], newRow)
           this.tiles[r] = newRow
         }
+      },
+      /**
+       * 比较新旧两行格子是否一致
+       */
+      equals (oldRow, newRow) {
+        if (oldRow.length !== newRow.length) {
+          return false
+        }
+        for (let i = 0; i < newRow.length; i++) {
+          if (newRow[i].value !== oldRow[i].value) {
+            return false
+          }
+        }
+        return true
       },
       /**
        * 判断是否失败的规则,
